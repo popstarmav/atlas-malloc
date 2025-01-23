@@ -7,20 +7,19 @@ static size_t page_size = 0;
 static size_t used_space = 0;
 
 void *naive_malloc(size_t size) {
-    size_t total_size;
     size_t *header;
-    void *allocated_mem;
+    size_t aligned_size;
 
-    /* Initialize page size if not done */
+    /* Initialize page size */
     if (page_size == 0) {
         page_size = sysconf(_SC_PAGESIZE);
     }
 
-    /* Add header size to requested size */
-    total_size = sizeof(size_t) + size;
+    /* Align the size to 8 bytes (64-bit alignment) */
+    aligned_size = (size + sizeof(size_t) + 7) & ~7;
 
-    /* Check if we need a new page */
-    if (page_start == NULL || (used_space + total_size > page_size)) {
+    /* First allocation or need new page */
+    if (page_start == NULL || (used_space + aligned_size > page_size)) {
         page_start = sbrk(page_size);
         if (page_start == (void *)-1) {
             return NULL;
@@ -28,14 +27,11 @@ void *naive_malloc(size_t size) {
         used_space = 0;
     }
 
-    /* Calculate allocation address */
-    allocated_mem = (char *)page_start + used_space;
-    header = (size_t *)allocated_mem;
+    /* Set up header and allocation */
+    header = (size_t *)((char *)page_start + used_space);
     *header = size;
+    used_space += aligned_size;
 
-    /* Update used space */
-    used_space += total_size;
-
-    /* Return address after header */
     return (void *)(header + 1);
 }
+
