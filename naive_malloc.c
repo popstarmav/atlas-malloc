@@ -1,36 +1,23 @@
+#include <unistd.h>
+#include <stddef.h>
 #include "malloc.h"
 
-static void *heap_start = NULL;
-static void *heap_end = NULL;
-
-void *naive_malloc(size_t size)
-{
-    size_t *block;
-    size_t total_size;
+void *naive_malloc(size_t size) {
+    size_t *header;
     size_t page_size = sysconf(_SC_PAGESIZE);
+    size_t total_size = sizeof(size_t) + size;
     
-    /* Calculate total size needed (header + requested size) */
-    total_size = sizeof(size_t) + size;
+    // Round up to nearest page size
+    total_size = ((total_size + page_size - 1) / page_size) * page_size;
     
-    /* Initialize heap if first call */
-    if (heap_start == NULL) {
-        heap_start = sbrk(page_size);
-        if (heap_start == (void *)-1)
-            return NULL;
-        heap_end = heap_start + page_size;
-    }
-    
-    /* Check if we have enough space in current page */
-    if (heap_start + total_size > heap_end) {
+    header = sbrk(total_size);
+    if (header == (void *)-1) {
         return NULL;
     }
     
-    /* Allocate from current page */
-    block = heap_start;
-    *block = size;
-    heap_start += total_size;
+    // Store total size in header
+    *header = total_size;
     
-    /* Return pointer to the usable memory (after the header) */
-    return (void *)(block + 1);
+    // Return address after header
+    return (void *)(header + 1);
 }
-
