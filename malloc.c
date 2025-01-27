@@ -12,13 +12,14 @@ void *_malloc(size_t size)
 {
 	void *block;
 	size_t *header;
-	size_t total_size;
+	size_t aligned_size;
 
 	if (size == 0)
 		return (NULL);
 
-	total_size = size + sizeof(size_t);
-	block = sbrk(total_size);
+	/* Align to 8-byte boundary */
+	aligned_size = (size + sizeof(size_t) + 7) & ~7;
+	block = sbrk(aligned_size);
 
 	if (block == (void *)-1)
 		return (NULL);
@@ -26,6 +27,6 @@ void *_malloc(size_t size)
 	header = (size_t *)block;
 	*header = size;
 
-	return (header + 1);
+	return ((void *)(header + 1));
 }
 
