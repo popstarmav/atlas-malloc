@@ -9,9 +9,9 @@ void _free(void *ptr)
 {
 	if (ptr != NULL)
 	{
-		/* Move pointer back to header */
 		size_t *header = ((size_t *)ptr - 1);
-		brk(header);
+		size_t size = *header;
+		void *end = (char *)ptr + size;
+		brk(end);
 	}
 }
-
