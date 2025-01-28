@@ -7,11 +7,6 @@
  */
 void _free(void *ptr)
 {
-	if (ptr != NULL)
-	{
-		size_t *header = ((size_t *)ptr - 1);
-		size_t size = *header;
-		void *end = (char *)ptr + size;
-		brk(end);
-	}
+    /* Simple implementation - just validate pointer */
+    (void)ptr;
 }
