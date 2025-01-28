@@ -2,31 +2,41 @@
 #include <stddef.h>
 #include "malloc.h"
 
-/**
- * _malloc - Allocates memory on the heap
- * @size: Number of bytes to allocate
- *
- * Return: Pointer to allocated memory, or NULL if allocation fails
- */
+typedef struct block_meta {
+    size_t size;
+    struct block_meta *next;
+    int free;
+} block_meta;
+
+static block_meta *head = NULL;
+
 void *_malloc(size_t size)
 {
-	void *block;
-	size_t *header;
-	size_t aligned_size;
+    block_meta *current = head;
+    block_meta *block;
+    size_t total_size;
 
-	if (size == 0)
-		return (NULL);
+    total_size = ((size + sizeof(block_meta) + 7) & ~7);
 
-	/* Align to 8-byte boundary */
-	aligned_size = (size + sizeof(size_t) + 7) & ~7;
-	block = sbrk(aligned_size);
+    /* Check existing freed blocks */
+    while (current) {
+        if (current->free && current->size >= total_size) {
+            current->free = 0;
+            return ((void*)(current + 1));
+        }
+        current = current->next;
+    }
 
-	if (block == (void *)-1)
-		return (NULL);
+    /* No suitable freed block found, allocate new */
+    block = sbrk(total_size);
+    if (block == (void*)-1)
+        return (NULL);
 
-	header = (size_t *)block;
-	*header = size;
+    block->size = total_size;
+    block->free = 0;
+    block->next = head;
+    head = block;
 
-	return ((void *)(header + 1));
+    return ((void*)(block + 1));
 }
 
